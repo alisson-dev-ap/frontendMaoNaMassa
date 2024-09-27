@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import MessagesList from "../MessagesList";
 import MessageInput from "../MessageInput";
 import { useMessages } from "../../context/messageChat";
-
+import ChatbotImage from "../../assets/imagem.jfif";
+import ChatHeader from "../ChatHeader";
 import * as Styled from './styles';
 
 
@@ -29,6 +30,7 @@ const Ticket = () => {
   const renderMessagesList = () => {
     return (
       <Styled.MessagesListWrapper>
+        <ChatHeader avatarUrl={ChatbotImage} title="Chatbot Mão na Massa" />
         <MessagesList />
         <MessageInput />
       </Styled.MessagesListWrapper>

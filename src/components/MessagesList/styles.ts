@@ -13,7 +13,7 @@ export const MessagesListWrapper = styled(Box)({
   display: "flex",
   flexDirection: "column",
   width: "100%",
-  height: "calc(100vh - 100px)",
+  height: "calc(100vh - 148px)",
   minWidth: 300,
   minHeight: 500,
 });

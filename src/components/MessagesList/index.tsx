@@ -6,7 +6,7 @@ import { Avatar, Typography } from "@mui/material";
 import { AccessTime, Done, DoneAll } from "@mui/icons-material";
 
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-
+import ReactAudioPlayer from 'react-audio-player';
 import MessageOptionsMenu from "../MessageOptionsMenu";
 import MarkdownWrapper from "../MarkdownWrapper";
 import { useMessages } from "../../context/messageChat";
@@ -180,6 +180,8 @@ const MessagesList = () => {
     }
   };
 
+  const savedAudio = localStorage.getItem("savedAudio");
+
   const renderMessages = () => {
     if (messagesList?.length > 0) {
       return messagesList?.map((message: any, index: any) => {
@@ -209,7 +211,17 @@ const MessagesList = () => {
             ) : (
               <Styled.MessageRight>
                 <Styled.TextContentItem>
-                  {message.body.includes('data:image') ? (
+                  {message.mediaType === "audio" ? (
+                    <Styled.TextContentItem>
+                      {savedAudio ? (
+                        <audio controls src={savedAudio}>
+                          Seu navegador não suporta o elemento de áudio.
+                        </audio>
+                      ) : (
+                        <span>Áudio não disponível</span>
+                      )}
+                    </Styled.TextContentItem>
+                  ) : message.body.includes('data:image') ? (
                     messageLocation(message.body, message.createdAt)
                   ) : isVCard(message.body) ? (
                     <Styled.TextContentItem>{vCard(message.body)}</Styled.TextContentItem>
@@ -227,7 +239,7 @@ const MessagesList = () => {
         );
       });
     } else {
-      return <div>Diga alguma coisa</div>;
+      return <Styled.MessageLeft>Olá! Posso te ajudar a criar um card no Trello ou responder suas perguntas. Você pode me dizer o que precisa em texto ou gravar um áudio. O que gostaria de fazer hoje?</Styled.MessageLeft>;
     }
   };
 

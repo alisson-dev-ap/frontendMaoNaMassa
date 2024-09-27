@@ -5,6 +5,7 @@ interface Message {
   fromMe: boolean;
   body: string;
   createdAt: string;
+  mediaType?: string;
 }
 
 interface MessagesContextProps {

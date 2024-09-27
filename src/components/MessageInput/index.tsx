@@ -171,6 +171,7 @@ const MessageInput: React.FC<any> = () => {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
   const handleUploadAudio = async (mediaBlobUrl?: string) => {
     if (!mediaBlobUrl) return;
 
@@ -182,23 +183,33 @@ const MessageInput: React.FC<any> = () => {
       const response = await fetch(mediaBlobUrl);
       const blob = await response.blob();
 
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64Audio = reader.result as string;
+
+        localStorage.setItem("savedAudio", base64Audio);
+
+        const audioUrl = URL.createObjectURL(blob);
+        updateMessage({
+          id: generateRandomId("audio"),
+          fromMe: true,
+          body: audioUrl,
+          mediaType: "audio",
+          createdAt: new Date().toISOString(),
+        });
+      };
+
       const formData = new FormData();
       const audioFile = new File([blob], "audio.mp3", { type: "audio/mp3" });
       formData.append("file", audioFile);
 
-      // Verificação de dados no FormData
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`); // Mostrará todas as entradas
-      }
-
-      // Suponha que este código está comentado para evitar o envio real durante os testes
-      const result = await api.post("/chathand-voice", formData, {
+      const { data } = await api.post("/chathand-voice", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log("Áudio enviado com sucesso!");
-      // Você pode verificar o resultado da resposta aqui
-      console.log(result);
+      updateMessage({ id: generateRandomId("audio"), fromMe: false, body: data.message, createdAt: new Date().toISOString() });
+
     } catch (error) {
       console.error("Erro ao enviar áudio:", error);
     } finally {
@@ -206,37 +217,10 @@ const MessageInput: React.FC<any> = () => {
     }
   };
 
-  // const handleUploadAudio = async (blobUrl: string) => {
-  //   console.log("Blob URL: ", blobUrl);
-  // setLoading(true);
-  // try {
-  //   const [, blob] = await Mp3Recorder.stop().getMp3();
-  //   if (blob.size < 10000) {
-  //     setLoading(false);
-  //     setRecording(false);
-  //     return;
-  //   }
-
-  //   const formData = new FormData();
-  //   const filename = ${new Date().getTime()}.mp3;
-  //   formData.append("medias", blob, filename);
-  //   formData.append("body", filename);
-  //   formData.append("fromMe", "true");
-
-  //   await api.post(/messages/${ticketId}, formData);
-  // } catch (err) {
-  //   toastError(err);
-  // }
-
-  // setRecording(false);
-  // setLoading(false);
-  // };
-
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  // O resto do componente permanece igual
   return (
     <MainWrapper square elevation={0}>
       <NewMessageBox>
@@ -294,14 +278,14 @@ const MessageInput: React.FC<any> = () => {
                       </RecorderWrapper>
                     </IconButton>
 
-                    {recording && (
+                    {status === "recording" && (
                       <IconButton
                         aria-label="stopRecording"
                         component="span"
                         disabled={loading}
                         onClick={() => {
-                          setRecording(false);
                           stopRecording();
+                          setRecording(false);
                           handleUploadAudio(mediaBlobUrl);
                         }}
                       >
@@ -356,7 +340,7 @@ const MessageInput: React.FC<any> = () => {
                   component="span"
                   disabled={loading}
                   onClick={() => {
-                    setRecording(true);
+                    // setRecording(true);
                     startRecording();
                   }}
                 >
@@ -365,7 +349,8 @@ const MessageInput: React.FC<any> = () => {
                   </SendMessageIcons>
                 </IconButton>
 
-                {recording && (
+
+                {status === "recording" && (
                   <IconButton
                     aria-label="stopRecording"
                     component="span"
