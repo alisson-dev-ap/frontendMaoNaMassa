@@ -117,14 +117,14 @@ const SendAudioIcon = styled(CheckCircleOutlineIcon)({
 
 const MessageInput: React.FC<any> = () => {
   const { ticketId } = useParams<{ ticketId: string; }>();
-
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [inputMessage, setInputMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [recording, setRecording] = useState<boolean>(false);
-
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { updateMessage, setLoadingRequest } = useMessages();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     if (inputRef.current) inputRef.current.focus();
@@ -170,6 +170,46 @@ const MessageInput: React.FC<any> = () => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const startRecording = async () => {
+    setRecording(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRec = new MediaRecorder(stream);
+      setMediaRecorder(mediaRec);
+      mediaRec.start();
+
+      let chunks: Blob[] = [];
+      mediaRec.ondataavailable = (e) => {
+        chunks.push(e.data);
+      };
+
+      mediaRec.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: "audio/webm" });
+        // Converte o Blob em Base64
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          const base64Audio = reader.result as string;
+          handleUploadAudio(base64Audio); // Chama a função passando a string Base64
+        };
+
+        setAudioChunks([]); // Limpa os chunks
+      };
+
+      setAudioChunks(chunks);
+    } catch (error) {
+      console.error("Erro ao iniciar gravação:", error);
+    }
+  };
+
+
+  const stopRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setRecording(false);
+    }
   };
 
   const handleUploadAudio = async (mediaBlobUrl?: string) => {
@@ -330,43 +370,29 @@ const MessageInput: React.FC<any> = () => {
             </SendMessageIcons>
           </IconButton>
         ) : (
-          <ReactMediaRecorder
-            audio={true}
-            mediaRecorderOptions={{ mimeType: 'audio/webm' }}
-            render={({ status, startRecording, stopRecording, mediaBlobUrl }) => (
-              <RecorderWrapper>
-                <IconButton
-                  aria-label="startRecording"
-                  component="span"
-                  disabled={loading}
-                  onClick={() => {
-                    // setRecording(true);
-                    startRecording();
-                  }}
-                >
-                  <SendMessageIcons>
-                    <MicIcon />
-                  </SendMessageIcons>
-                </IconButton>
+          <RecorderWrapper>
+            <IconButton
+              aria-label="startRecording"
+              component="span"
+              disabled={loading}
+              onClick={startRecording}
+            >
+              <SendMessageIcons>
+                <MicIcon />
+              </SendMessageIcons>
+            </IconButton>
 
-
-                {status === "recording" && (
-                  <IconButton
-                    aria-label="stopRecording"
-                    component="span"
-                    disabled={loading}
-                    onClick={() => {
-                      setRecording(false);
-                      stopRecording();
-                      handleUploadAudio(mediaBlobUrl);
-                    }}
-                  >
-                    <SendAudioIcon />
-                  </IconButton>
-                )}
-              </RecorderWrapper>
+            {recording && (
+              <IconButton
+                aria-label="stopRecording"
+                component="span"
+                disabled={loading}
+                onClick={stopRecording}
+              >
+                <SendAudioIcon />
+              </IconButton>
             )}
-          />
+          </RecorderWrapper>
         )}
       </NewMessageBox>
     </MainWrapper >
